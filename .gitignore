@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Data
+data/
+PokemonData/
+*.zip
+
+# Checkpoints (keep folder, ignore weights)
+checkpoints/*.pth
+checkpoints/*.pt
+
+# Notebooks
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+runs/
+logs/
+*.log
