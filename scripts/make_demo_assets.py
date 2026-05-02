@@ -1,14 +1,14 @@
-"""Generate illustrative learning-curve and demo screenshots.
+"""Generate learning-curve and comparison figures for the README.
 
-Run once to populate ``assets/`` with figures that the README references, so the
-repo isn't visually empty before the user runs the (slow) training. Real
-training outputs from ``experiments/run_all.py`` overwrite ``results/`` but
-leave the ``assets/`` previews alone.
+If ``results/summary.json`` exists (i.e. ``experiments/run_all.py`` has been
+run), ``make_comparison_bar`` uses the real test metrics. Otherwise it falls
+back to illustrative numbers so the README isn't visually empty.
 
     python scripts/make_demo_assets.py
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -96,16 +96,31 @@ def make_curves():
 
 
 def make_comparison_bar():
-    """Side-by-side bar chart of test accuracy across the 5 experiments."""
-    tags = [
-        "exp1\nresnet18\nfrozen",
-        "exp2\nresnet18\nfull",
-        "exp3\nresnet50\nfull",
-        "exp4\nresnet18\nscratch",
-        "exp5\nmobilenetv2\nfull",
-    ]
-    acc = [0.74, 0.93, 0.95, 0.32, 0.91]
-    f1 = [0.71, 0.92, 0.94, 0.28, 0.90]
+    """Side-by-side bar chart of test accuracy across the experiments.
+
+    Reads real numbers from ``results/summary.json`` when available; falls back
+    to illustrative values if training hasn't been run yet.
+    """
+    summary_path = PROJECT_ROOT / "results" / "summary.json"
+    if summary_path.exists():
+        with summary_path.open(encoding="utf-8") as f:
+            payload = json.load(f)
+        experiments = payload["experiments"]
+        tags = ["\n".join(e["tag"].split("_")) for e in experiments]
+        acc = [e["test"]["accuracy"] for e in experiments]
+        f1 = [e["test"]["f1_macro"] for e in experiments]
+        title = "Test performance across experiment settings"
+    else:
+        tags = [
+            "exp1\nresnet18\nfrozen",
+            "exp2\nresnet18\nfull",
+            "exp3\nresnet50\nfull",
+            "exp4\nresnet18\nscratch",
+            "exp5\nmobilenetv2\nfull",
+        ]
+        acc = [0.74, 0.93, 0.95, 0.32, 0.91]
+        f1 = [0.71, 0.92, 0.94, 0.28, 0.90]
+        title = "Test performance across experiment settings (illustrative)"
 
     x = np.arange(len(tags))
     width = 0.38
@@ -114,13 +129,13 @@ def make_comparison_bar():
     b2 = ax.bar(x + width / 2, f1, width, label="Test F1 (macro)")
     ax.set_xticks(x); ax.set_xticklabels(tags, fontsize=9)
     ax.set_ylim(0, 1.05); ax.set_ylabel("Score")
-    ax.set_title("Test performance across experiment settings (illustrative)")
+    ax.set_title(title)
     ax.grid(axis="y", alpha=0.3)
     ax.legend()
     for bars in (b1, b2):
         for b in bars:
             ax.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.01,
-                    f"{b.get_height():.2f}", ha="center", fontsize=8)
+                    f"{b.get_height():.3f}", ha="center", fontsize=8)
     fig.tight_layout()
     fig.savefig(ASSETS / "comparison_bar.png", dpi=120)
     plt.close(fig)
